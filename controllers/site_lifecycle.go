@@ -476,7 +476,7 @@ func (r *FrappeSiteReconciler) getContainerSecurityContext(ctx context.Context, 
 
 // getSiteInitResources returns resource requirements for site initialization jobs
 func (r *FrappeSiteReconciler) getSiteInitResources(bench *vyogotechv1.FrappeBench) corev1.ResourceRequirements {
-	return corev1.ResourceRequirements{
+	resources := corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			corev1.ResourceCPU:    resource.MustParse("100m"),
 			corev1.ResourceMemory: resource.MustParse("1Gi"),
@@ -486,6 +486,38 @@ func (r *FrappeSiteReconciler) getSiteInitResources(bench *vyogotechv1.FrappeBen
 			corev1.ResourceMemory: resource.MustParse("1Gi"),
 		},
 	}
+
+	operatorConfig, err := r.getOperatorConfig(context.Background(), bench.Namespace)
+	if err != nil || operatorConfig == nil {
+		return resources
+	}
+
+	if cpu := parseResourceQuantity(operatorConfig.Data["siteInitCPURequest"]); cpu != nil {
+		resources.Requests[corev1.ResourceCPU] = *cpu
+	}
+	if memory := parseResourceQuantity(operatorConfig.Data["siteInitMemoryRequest"]); memory != nil {
+		resources.Requests[corev1.ResourceMemory] = *memory
+	}
+	if cpu := parseResourceQuantity(operatorConfig.Data["siteInitCPULimit"]); cpu != nil {
+		resources.Limits[corev1.ResourceCPU] = *cpu
+	}
+	if memory := parseResourceQuantity(operatorConfig.Data["siteInitMemoryLimit"]); memory != nil {
+		resources.Limits[corev1.ResourceMemory] = *memory
+	}
+
+	return resources
+}
+
+func parseResourceQuantity(value string) *resource.Quantity {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	quantity, err := resource.ParseQuantity(value)
+	if err != nil {
+		return nil
+	}
+	return &quantity
 }
 
 // getSiteDeleteResources returns resource requirements for site deletion jobs

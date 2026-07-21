@@ -155,6 +155,17 @@ operatorConfig:
   # Max concurrent FrappeSite reconciles (default 10). Tune for 100s of sites.
   # Can be overridden per-bench via spec.siteReconcileConcurrency (operator uses max).
   maxConcurrentSiteReconciles: "10"
+
+  # Optional resource overrides for FrappeSite init jobs. These jobs run
+  # bench new-site, initial app installation, migrations, and config sync.
+  # Empty values preserve controller defaults.
+  siteInitResources:
+    requests:
+      cpu: ""
+      memory: ""
+    limits:
+      cpu: ""
+      memory: ""
   
   # Override KEDA values if needed
   # resources:
@@ -278,4 +289,3 @@ global:
       enabled: false
     grafana:
       enabled: false
-

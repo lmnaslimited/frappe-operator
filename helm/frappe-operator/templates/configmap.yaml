@@ -38,3 +38,9 @@ data:
   defaultNginxImage: {{ .Values.operatorConfig.defaultNginxImage | quote }}
   # Max concurrent FrappeSite reconciles (default 10). Tune for 100s of sites.
   maxConcurrentSiteReconciles: {{ .Values.operatorConfig.maxConcurrentSiteReconciles | default "10" | quote }}
+  # Resource overrides for FrappeSite init jobs. These jobs run bench new-site,
+  # app installation, migration, and site config sync.
+  siteInitCPURequest: {{ .Values.operatorConfig.siteInitResources.requests.cpu | default "" | quote }}
+  siteInitMemoryRequest: {{ .Values.operatorConfig.siteInitResources.requests.memory | default "" | quote }}
+  siteInitCPULimit: {{ .Values.operatorConfig.siteInitResources.limits.cpu | default "" | quote }}
+  siteInitMemoryLimit: {{ .Values.operatorConfig.siteInitResources.limits.memory | default "" | quote }}

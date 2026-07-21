@@ -281,6 +281,58 @@ func TestFrappeBenchReconciler_Helpers(t *testing.T) {
 		}
 	})
 
+	t.Run("getSiteInitResourcesUsesOperatorConfigOverrides", func(t *testing.T) {
+		bench := &vyogotechv1.FrappeBench{
+			ObjectMeta: metav1.ObjectMeta{Name: benchName, Namespace: namespace},
+			Spec:       vyogotechv1.FrappeBenchSpec{},
+		}
+		operatorConfig := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: "frappe-operator-config", Namespace: "frappe-operator-system"},
+			Data: map[string]string{
+				"siteInitCPURequest":    "1000m",
+				"siteInitMemoryRequest": "2Gi",
+				"siteInitCPULimit":      "2",
+				"siteInitMemoryLimit":   "3Gi",
+			},
+		}
+		client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(bench, operatorConfig).Build()
+		r := &FrappeSiteReconciler{Client: client, Scheme: scheme}
+
+		res := r.getSiteInitResources(bench)
+		if res.Requests.Cpu().Cmp(resource.MustParse("1000m")) != 0 {
+			t.Errorf("CPU request expected 1000m, got %s", res.Requests.Cpu().String())
+		}
+		if res.Requests.Memory().Cmp(resource.MustParse("2Gi")) != 0 {
+			t.Errorf("memory request expected 2Gi, got %s", res.Requests.Memory().String())
+		}
+		if res.Limits.Cpu().Cmp(resource.MustParse("2")) != 0 {
+			t.Errorf("CPU limit expected 2, got %s", res.Limits.Cpu().String())
+		}
+		if res.Limits.Memory().Cmp(resource.MustParse("3Gi")) != 0 {
+			t.Errorf("memory limit expected 3Gi, got %s", res.Limits.Memory().String())
+		}
+	})
+
+	t.Run("getSiteInitResourcesUsesInstalledConfigMapName", func(t *testing.T) {
+		bench := &vyogotechv1.FrappeBench{
+			ObjectMeta: metav1.ObjectMeta{Name: benchName, Namespace: namespace},
+			Spec:       vyogotechv1.FrappeBenchSpec{},
+		}
+		operatorConfig := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: "frappe-operator-frappe-operator-config", Namespace: "frappe-operator-system"},
+			Data: map[string]string{
+				"siteInitCPULimit": "1500m",
+			},
+		}
+		client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(bench, operatorConfig).Build()
+		r := &FrappeSiteReconciler{Client: client, Scheme: scheme}
+
+		res := r.getSiteInitResources(bench)
+		if res.Limits.Cpu().Cmp(resource.MustParse("1500m")) != 0 {
+			t.Errorf("CPU limit expected 1500m, got %s", res.Limits.Cpu().String())
+		}
+	})
+
 	t.Run("getGunicornResources", func(t *testing.T) {
 		bench := &vyogotechv1.FrappeBench{
 			ObjectMeta: metav1.ObjectMeta{Name: benchName, Namespace: namespace},

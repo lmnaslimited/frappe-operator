@@ -77,12 +77,19 @@ func (r *FrappeSiteReconciler) getBenchImage(ctx context.Context, bench *vyogote
 
 // getOperatorConfig retrieves the operator configuration ConfigMap
 func (r *FrappeSiteReconciler) getOperatorConfig(ctx context.Context, namespace string) (*corev1.ConfigMap, error) {
-	configMap := &corev1.ConfigMap{}
-	err := r.Get(ctx, types.NamespacedName{
-		Name:      "frappe-operator-config",
-		Namespace: "frappe-operator-system", // Operator namespace
-	}, configMap)
-	return configMap, err
+	var lastErr error
+	for _, name := range []string{"frappe-operator-config", "frappe-operator-frappe-operator-config"} {
+		configMap := &corev1.ConfigMap{}
+		err := r.Get(ctx, types.NamespacedName{
+			Name:      name,
+			Namespace: "frappe-operator-system", // Operator namespace
+		}, configMap)
+		if err == nil {
+			return configMap, nil
+		}
+		lastErr = err
+	}
+	return nil, lastErr
 }
 
 // isLocalDomain checks if a domain is a local development domain
